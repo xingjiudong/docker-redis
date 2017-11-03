@@ -1,0 +1,51 @@
+version: '2.1'
+
+volumes:
+  redis-data:
+    driver: "${VOLUME_DRIVER}"
+networks:
+  redis-network:
+services:
+  redis-server:
+    image: redis:${REDIS_VERSION}
+    restart: unless-stopped 
+    cpu_quota: 20000 
+    mem_limit: 1000M
+    memswap_limit: -1 
+    logging:
+      driver: "journald"
+    dns:
+     - ${DNS_SERVER}
+    ports:
+     - "6379"
+    networks:
+     - redis-network
+    volumes:
+     - redis-data:/data
+    environment:
+     - affinity:container!=*redis*
+     - constraint:volume.driver==${VOLUME_DRIVER}
+  redis-haproxy:
+    image: openfrontier/haproxy-etcd:${HAPROXY_VERSION}
+    restart: unless-stopped
+    logging:
+      driver: "journald"
+    dns:
+     - ${DNS_SERVER}
+    networks:
+     - redis-network
+    ports:
+     - "6379:6379"
+     - "8000:8000"
+    depends_on:
+     - "redis-server"
+    environment:
+     - constraint:node==${HAPROXY_NODE}
+     - ETCD_CLIENT_IP=${ETCD_CLIENT_IP}
+     - PROJECT_NAME=${PROJECT_NAME}
+     - TIMEOUT_CONNECT=${TIMEOUT_CONNECT}
+     - TIMEOUT_CLIENT=${TIMEOUT_CLIENT}
+     - TIMEOUT_SERVER=${TIMEOUT_SERVER}
+     - TIMEOUT_HTTP_KEEP_ALIVE=${TIMEOUT_HTTP_KEEP_ALIVE}
+     - MAXCONN=${MAXCONN}
+
