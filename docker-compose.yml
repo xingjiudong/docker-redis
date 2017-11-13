@@ -6,11 +6,11 @@ volumes:
 networks:
   redis-network:
 services:
-  redis-server:
+  redis:
     image: redis:${REDIS_VERSION}
     restart: unless-stopped 
-    cpu_quota: 20000 
-    mem_limit: 1000M
+    cpu_quota: 90000 
+    mem_limit: 3000M
     memswap_limit: -1 
     logging:
       driver: "journald"
@@ -25,6 +25,7 @@ services:
     environment:
      - affinity:container!=*redis*
      - constraint:volume.driver==${VOLUME_DRIVER}
+    command: redis-server --requirepass ${REQUIRPASS}
   redis-haproxy:
     image: openfrontier/haproxy-etcd:${HAPROXY_VERSION}
     restart: unless-stopped
@@ -38,7 +39,7 @@ services:
      - "6379:6379"
      - "8000:8000"
     depends_on:
-     - "redis-server"
+     - "redis"
     environment:
      - constraint:node==${HAPROXY_NODE}
      - ETCD_CLIENT_IP=${ETCD_CLIENT_IP}
